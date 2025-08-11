@@ -21,3 +21,5 @@ lxml
 requests
 langchain-chroma
 duckduckgo-search
+mcp
+fastmcp
