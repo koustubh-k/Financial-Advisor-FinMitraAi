@@ -21,11 +21,11 @@ load_dotenv()
 
 class Config:
     """Configuration class for API keys and settings."""
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-    ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY", "gsk_1234567890")
+    ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "123")
     FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")  # Alternative stock API
     NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")  # For news data
-    HF_TOKEN = os.getenv("HF_TOKEN", "")
+    HF_TOKEN = os.getenv("HF_TOKEN", "cxQn@1WFAzKFHMGhxyKiGwaFrbmoOXuxcDk")
     VECTOR_STORE_PATH = "chromadb_user_history"
     
     # API URLs
