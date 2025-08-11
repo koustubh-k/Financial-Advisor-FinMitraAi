@@ -32,4 +32,7 @@ dependencies = [
     "lxml",
     "langchain-chroma",
     "duckduckgo-search",
+    "mcp",
+    "fastmcp",
+
 ]
