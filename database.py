@@ -12,7 +12,7 @@ class UserHistoryVectorDB:
     """Manages user chat history using a persistent vector store."""
     def __init__(self, collection_name="user_chat_history", embedding_model=None):
         if embedding_model is None:
-            if Config.HF_TOKEN and Config.HF_TOKEN != "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":
+            if Config.HF_TOKEN and Config.HF_TOKEN != "":
                 os.environ["HF_TOKEN"] = Config.HF_TOKEN
             self.embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         else:
@@ -48,3 +48,4 @@ class UserHistoryVectorDB:
         except Exception as e:
             print(f"Error retrieving history from ChromaDB: {e}")
             return []
+
