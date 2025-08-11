@@ -34,5 +34,4 @@ dependencies = [
     "duckduckgo-search",
     "mcp",
     "fastmcp",
-
 ]
