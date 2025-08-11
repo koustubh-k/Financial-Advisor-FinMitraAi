@@ -1,7 +1,8 @@
 # ====================
-# 6. Enhanced main application
+# 6. Enhanced main application with puch_user_id authentication
 # ====================
-from typing import TypedDict, Annotated, Sequence
+import asyncio
+from typing import TypedDict, Annotated, Sequence, Optional, Literal
 import operator
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.agents import AgentAction, AgentFinish
@@ -13,17 +14,60 @@ import uvicorn
 from contextlib import asynccontextmanager
 import datetime
 import os
-import json # Added to handle JSON output more cleanly
+import json
+
+# Import necessary modules for authentication
+from fastmcp import FastMCP
+from fastmcp.server.auth.providers.bearer import BearerAuthProvider, RSAKeyPair
+from mcp.server.auth.provider import AccessToken
+from mcp.types import TextContent, INVALID_PARAMS, INTERNAL_ERROR
+from pydantic import Field, BaseModel
+
+from dotenv import load_dotenv
 
 # Import enhanced tools
 from enhanced_tools import (
-    get_nifty_data, perform_web_search, generate_pdf_report, 
-    analyze_portfolio, set_nifty_alert, get_stock_price, 
+    get_nifty_data, perform_web_search, generate_pdf_report,
+    analyze_portfolio, set_nifty_alert, get_stock_price,
     get_real_estate_info, get_gold_price
 )
 from models import get_llm_model
 from database import UserHistoryVectorDB
 from config import Config
+
+# Load environment variables
+load_dotenv()
+TOKEN = os.environ.get("AUTH_TOKEN")
+MY_NUMBER = os.environ.get("MY_NUMBER")
+
+assert TOKEN, "Please set AUTH_TOKEN in your .env file"
+assert MY_NUMBER, "Please set MY_NUMBER in your .env file"
+
+# --- Auth Provider with puch_user_id ---
+class SimpleBearerAuthProvider(BearerAuthProvider):
+    def __init__(self, token: str):
+        k = RSAKeyPair.generate()
+        super().__init__(
+            public_key=k.public_key, jwks_uri=None, issuer=None, audience=None
+        )
+        self.token = token
+
+    async def load_access_token(self, token: str) -> AccessToken | None:
+        if token == self.token:
+            return AccessToken(
+                token=token, client_id="finmitra-client", scopes=["*"], expires_at=None
+            )
+        return None
+
+mcp = FastMCP(
+    "FinMitra AI Financial Advisor",
+    auth=SimpleBearerAuthProvider(TOKEN),
+)
+
+# --- MCP Tool: validate (required by Puch) ---
+@mcp.tool
+async def validate() -> str:
+    return MY_NUMBER
 
 class AgentState(TypedDict):
     input: str
@@ -35,8 +79,8 @@ class AgentState(TypedDict):
 
 # Enhanced tools list with real-time capabilities
 tools = [
-    get_nifty_data, perform_web_search, generate_pdf_report, 
-    analyze_portfolio, set_nifty_alert, get_stock_price, 
+    get_nifty_data, perform_web_search, generate_pdf_report,
+    analyze_portfolio, set_nifty_alert, get_stock_price,
     get_real_estate_info, get_gold_price
 ]
 
@@ -57,7 +101,7 @@ except OSError as e:
         raise
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are an advanced AI financial advisor bot specializing in the Indian stock market with real-time data capabilities. 
+    ("system", """You are an advanced AI financial advisor bot specializing in the Indian stock market with real-time data capabilities.
 
     Your key features:
     - Access to live market data via Yahoo Finance and web search
@@ -95,16 +139,16 @@ def run_agent(state: AgentState):
             "history_docs": history_string,
             "agent_scratchpad": state['intermediate_steps']
         })
-        
+
         db.add_message(state['user_id'], f"Human: {state['input']}")
         db.add_message(state['user_id'], f"AI: {result['output']}")
-        
+
         return {"agent_outcome": result['output']}
-        
+
     except Exception as e:
         print(f"Agent execution error: {e}")
         error_msg = str(e)
-        
+
         if "over capacity" in error_msg.lower():
             return {"agent_outcome": "🚫 The AI service is currently at capacity. Please try again in a few moments!"}
         elif "timeout" in error_msg.lower():
@@ -122,7 +166,7 @@ def handle_message(user_id: str, message: str):
     """Enhanced message handler with real-time processing."""
     print(f"\n🔄 Processing message from User {user_id}")
     print(f"Query: {message}")
-    
+
     state = {
         "input": message,
         "chat_history": [],
@@ -130,14 +174,14 @@ def handle_message(user_id: str, message: str):
         "intermediate_steps": [],
         "history_docs": ""
     }
-    
+
     try:
         response = app_graph.invoke(state)
         final_output = response['agent_outcome']
     except Exception as e:
         print(f"Message handling error: {e}")
         final_output = "⚠️ I'm experiencing technical difficulties. Please try again in a moment."
-        
+
     print(f"Response: {final_output}")
     print("✅ Processing complete\n")
     return final_output
@@ -169,7 +213,7 @@ async def enhanced_webhook(user_id: str = Form(...), message_body: str = Form(..
 
     try:
         response_message = handle_message(user_id, message_body)
-        
+
         return {
             "response": response_message,
             "status": "success",
@@ -177,7 +221,7 @@ async def enhanced_webhook(user_id: str = Form(...), message_body: str = Form(..
             "timestamp": datetime.datetime.now().isoformat(),
             "features_used": ["real_time_data", "web_search"]
         }
-        
+
     except Exception as e:
         print(f"Webhook error: {e}")
         return {
@@ -208,30 +252,8 @@ async def get_market_status():
         }
 
 if __name__ == "__main__":
-    print("🚀 Starting Enhanced Financial Advisor Bot...")
+    print("🚀 Starting FinMitra AI Financial Advisor Bot...")
     print("📊 Features: Real-time data, Web search, Live prices")
-    
-    # print("\n🧪 Running system tests...")
-    
-    # test_cases = [
-    #     ("user1", "Show me the latest Nifty data with current news"),
-    #     ("user2", "What's the current price of Reliance stock?"),
-    #     ("user3", "Search for best investment opportunities today"),
-    #     ("user4", "Get me real-time gold prices"),
-    #     ("user5", "Alert me when Nifty hits 22,500"),
-    #     ("user6", "Analyze my portfolio: [{'ticker': 'RELIANCE', 'quantity': 100}]"),
-    #     ("user7", "What's the real estate market like in Mumbai?")
-    # ]
-    
-    # for user_id, message in test_cases:
-    #     print(f"\n📝 Test: {message}")
-    #     try:
-    #         result = handle_message(user_id, message)
-    #         print(f"✅ Success: {len(result)} characters returned")
-    #     except Exception as e:
-    #         print(f"❌ Failed: {e}")
-    
-    # print("\n🏁 Tests completed. Starting web server...")
-    
+
     # Start the FastAPI server
     uvicorn.run("mcp_main:app", host="0.0.0.0", port=8000, reload=True)
