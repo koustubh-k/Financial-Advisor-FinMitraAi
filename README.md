@@ -194,51 +194,9 @@ python -m app.main &
 streamlit run app/streamlit_app.py &
 ```
 
-### Cloud Deployment
 
-#### Heroku
-
-```bash
-# Install Heroku CLI
-heroku create your-app-name
-heroku config:set GROQ_API_KEY=your_key
-git push heroku main
-```
-
-#### AWS/DigitalOcean
-
-- Use Docker containers
-- Configure environment variables
-- Set up load balancer for both services
-
-### Docker Deployment
-
-```bash
-# Build and run
-docker build -t fin-adv .
-docker run -p 8000:8000 -p 8501:8501 fin-adv
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## ⚠️ Disclaimer
-
-This application is for educational and informational purposes only. It does not constitute financial advice. Always consult with qualified financial advisors before making investment decisions. The developers are not responsible for any financial losses incurred through the use of this application.
-
-## 📞 Support
-
-For questions, issues, or contributions:
-
-- Open an issue on GitHub
-- Check the setup.md for detailed technical documentation
-- Review the TODO.md for planned features and improvements
